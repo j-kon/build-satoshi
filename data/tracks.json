@@ -1,0 +1,323 @@
+[
+  {
+    "id": "lightning-tip-jar",
+    "title": "Lightning Tip Jar",
+    "tagline": "Accept your first Lightning payment",
+    "difficulty": "beginner",
+    "weeks": 4,
+    "stack": ["LDK", "Rust", "Lightning"],
+    "description": "Build a minimal app that generates a Lightning invoice, displays a QR code, and listens for payment confirmation. The simplest possible real Lightning integration.",
+    "what_you_build": "A Rust CLI + simple HTML frontend. User enters an amount in sats, gets a Lightning invoice and QR code, and sees a confirmation when paid.",
+    "milestones": [
+      {
+        "week": 1,
+        "title": "Set up LDK node on regtest and connect to a local bitcoind",
+        "description": "Install LDK, configure a regtest environment using Bitcoin Core, and verify your node starts and syncs.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "main.rs",
+          "code": "use lightning::routing::gossip::NetworkGraph;\nuse lightning::util::config::UserConfig;\n\nfn main() -> anyhow::Result<()> {\n    let network_graph = NetworkGraph::new(bitcoin::Network::Regtest, &logger);\n    let config = UserConfig::default();\n    let channel_manager = build_channel_manager(config, &fee_estimator, &chain_monitor)?;\n\n    println!(\"LDK node booted on regtest\");\n    println!(\"channel manager ready: {:?}\", channel_manager.get_our_node_id());\n    Ok(())\n}"
+        },
+        "resources": [
+          {
+            "label": "LDK getting started",
+            "url": "https://lightningdevkit.org/introduction/"
+          },
+          {
+            "label": "Decoding Bitcoin: Transactions",
+            "url": "https://bitcoindevs.xyz/decoding/roadmap"
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "title": "Generate a BOLT11 invoice and display a QR code",
+        "description": "Create a fixed-value or user-entered invoice, then expose it to a tiny frontend that renders both the invoice string and a scannable QR code.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "invoice.rs",
+          "code": "use lightning_invoice::utils::create_invoice_from_channelmanager;\n\npub fn create_tip_invoice(amount_sats: u64) -> anyhow::Result<String> {\n    let amount_msats = amount_sats * 1_000;\n    let invoice = create_invoice_from_channelmanager(\n        &channel_manager,\n        keys_manager,\n        logger,\n        bitcoin::Network::Regtest,\n        Some(amount_msats),\n        \"build-satoshi-tip\".to_owned(),\n        3600,\n        None,\n    )?;\n\n    Ok(invoice.to_string())\n}"
+        },
+        "resources": [
+          {
+            "label": "BOLT11 spec",
+            "url": "https://github.com/lightning/bolts/blob/master/11-payment-encoding.md"
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "title": "Listen for payment and confirm receipt",
+        "description": "Watch the LDK event stream for invoice settlement, then push a small success event over SSE so the frontend can flip from pending to paid in real time.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "events.rs",
+          "code": "use lightning::events::Event;\n\npub fn handle_event(event: Event, tx: &tokio::sync::broadcast::Sender<String>) {\n    if let Event::PaymentClaimable { payment_hash, amount_msat, .. } = event {\n        let sats = amount_msat / 1_000;\n        let payload = format!(\"event: paid\\ndata: {}:{}\\n\\n\", payment_hash, sats);\n        let _ = tx.send(payload);\n    }\n}"
+        },
+        "resources": [
+          {
+            "label": "LDK events",
+            "url": "https://lightningdevkit.org/key_concepts/payment_lifecycle/"
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "title": "Polish, write README, and open-source it",
+        "description": "Clean up the code, write a proper README with setup instructions, record a 30-second demo GIF, and push to GitHub.",
+        "resources": [
+          {
+            "label": "Good README guide",
+            "url": "https://www.makeareadme.com/"
+          },
+          {
+            "label": "BDP projects gallery",
+            "url": "https://bitcoindevs.xyz/projects"
+          }
+        ]
+      }
+    ],
+    "chatbtc_context": "I am building a Lightning tip jar using LDK in Rust. I have a regtest environment running."
+  },
+  {
+    "id": "bitcoin-savings-app",
+    "title": "Bitcoin Savings App",
+    "tagline": "Build vault-based savings with BDK and Flutter",
+    "difficulty": "intermediate",
+    "weeks": 8,
+    "stack": ["BDK", "Flutter", "Lightning"],
+    "description": "Build a Bitcoin savings mobile app with time-locked vaults, savings streaks, and Lightning receive. Uses bdk_flutter for on-chain wallet operations and LDK for Lightning receive.",
+    "what_you_build": "A Flutter mobile app. Users create savings vaults with lock periods, earn streak badges for consistent deposits, and receive sats via Lightning. Balance displayed in both SAT and NGN equivalent.",
+    "milestones": [
+      {
+        "week": 1,
+        "title": "Set up bdk_flutter, generate a descriptor wallet, and display a receive address",
+        "description": "Initialize a testnet descriptor wallet, persist the seed locally for development, and render the first receive address in a clean onboarding screen.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "wallet_service.dart",
+          "code": "import 'package:bdk_flutter/bdk_flutter.dart';\n\nclass WalletService {\n  Future<Wallet> initWallet(String mnemonic) async {\n    final descriptor = await Descriptor.newBip84(\n      mnemonic: mnemonic,\n      network: Network.testnet,\n      password: '',\n    );\n\n    return Wallet(descriptor: descriptor, network: Network.testnet);\n  }\n}"
+        },
+        "resources": [
+          {
+            "label": "bdk_flutter pub.dev",
+            "url": "https://pub.dev/packages/bdk_flutter"
+          },
+          {
+            "label": "BDK docs",
+            "url": "https://bitcoindevkit.org/"
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "title": "Build UTXO tracking, balance display, and transaction list",
+        "description": "Sync the wallet over Esplora, expose UTXOs and recent transactions through Riverpod, and make the balance screen feel alive with real wallet state.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "wallet_provider.dart",
+          "code": "final walletProvider = FutureProvider<WalletSnapshot>((ref) async {\n  final wallet = await ref.watch(walletServiceProvider.future);\n  final blockchain = await EsploraClient.create(baseUrl: 'https://blockstream.info/testnet/api');\n\n  await wallet.sync(blockchain: blockchain);\n\n  return WalletSnapshot(\n    balance: await wallet.getBalance(),\n    utxos: await wallet.listUnspent(),\n    transactions: await wallet.listTransactions(),\n  );\n});"
+        },
+        "resources": [
+          {
+            "label": "Decoding Bitcoin: UTXO model",
+            "url": "https://bitcoindevs.xyz/decoding/utxo"
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "title": "Implement vault lock periods using OP_CHECKLOCKTIMEVERIFY",
+        "description": "Create a savings vault where funds are locked until a future block height. Build the lock and unlock flow so users understand when funds become spendable.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "vault_service.dart",
+          "code": "class VaultService {\n  Script buildCltvVault({required String pubkey, required int lockHeight}) {\n    return ScriptBuilder()\n        .addInt(lockHeight)\n        .addOp(Opcode.opCheckLockTimeVerify)\n        .addOp(Opcode.opDrop)\n        .addData(pubkey)\n        .addOp(Opcode.opCheckSig)\n        .asScript();\n  }\n}"
+        },
+        "resources": [
+          {
+            "label": "Decoding Bitcoin: Scripts",
+            "url": "https://bitcoindevs.xyz/decoding/overview"
+          },
+          {
+            "label": "BIP 65",
+            "url": "https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki"
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "title": "Savings plan UI with streak counter and badge system",
+        "description": "Introduce the motivation layer: deposit reminders, a streak counter, and lightweight animations that reward consistent weekly saving behavior.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "streak_service.dart",
+          "code": "class StreakService {\n  Future<int> updateStreak(DateTime now, SharedPreferences prefs) async {\n    final lastDeposit = prefs.getString('last_deposit_at');\n    final current = prefs.getInt('current_streak') ?? 0;\n    final next = _isConsecutive(lastDeposit, now) ? current + 1 : 1;\n\n    await prefs.setString('last_deposit_at', now.toIso8601String());\n    await prefs.setInt('current_streak', next);\n    return next;\n  }\n}"
+        },
+        "resources": []
+      },
+      {
+        "week": 5,
+        "title": "Add Lightning receive via LDK-node Flutter bindings",
+        "description": "Bridge the mobile app into Lightning receive flow so users can top up savings with small payments and watch those sats land inside the app.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "lightning_receive_service.dart",
+          "code": "import 'package:ldk_node/ldk_node.dart';\n\nclass LightningReceiveService {\n  Future<String> createInvoice(Node node, int amountSats) async {\n    final invoice = await node.receive(\n      amountMsat: amountSats * 1000,\n      description: 'Build Satoshi savings deposit',\n      expirySecs: 3600,\n    );\n\n    return invoice.bolt11;\n  }\n}"
+        },
+        "resources": [
+          {
+            "label": "ldk_node Flutter",
+            "url": "https://pub.dev/packages/ldk_node"
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "title": "Live NGN price feed using a public Binance REST API and real-time SAT to NGN conversion display",
+        "description": "Fetch a fresh BTC/NGN price every 30 seconds, normalize the numbers, and make the balance screen speak the language your target users actually use every day.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "price_service.dart",
+          "code": "class PriceService {\n  final client = HttpClient();\n\n  Future<double> fetchBtcNgn() async {\n    final request = await client.getUrl(Uri.parse('https://api.binance.com/api/v3/ticker/price?symbol=BTCNGN'));\n    final response = await request.close();\n    final payload = jsonDecode(await response.transform(utf8.decoder).join());\n    return double.parse(payload['price'] as String);\n  }\n}"
+        },
+        "resources": []
+      },
+      {
+        "week": 7,
+        "title": "Push notifications for streak reminders using Firebase Cloud Messaging",
+        "description": "Wire in reminders that nudge users back into the app before their streak expires, keeping the savings rhythm intact without adding a backend.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "reminder_service.dart",
+          "code": "class ReminderService {\n  Future<void> registerFirebaseMessaging() async {\n    await FirebaseMessaging.instance.requestPermission();\n    final token = await FirebaseMessaging.instance.getToken();\n    debugPrint('FCM token: $token');\n  }\n}"
+        },
+        "resources": [
+          {
+            "label": "FlutterFire FCM",
+            "url": "https://firebase.flutter.dev/docs/messaging/overview/"
+          }
+        ]
+      },
+      {
+        "week": 8,
+        "title": "Portfolio card generator and submit to BDP gallery",
+        "description": "Add an in-app share card generator. Record a demo video. Open a PR to submit to the BDP BOSS projects list.",
+        "starter_code": {
+          "language": "Dart",
+          "filename": "portfolio_card_service.dart",
+          "code": "class PortfolioCardService {\n  Future<Uint8List> buildShareCard(VaultSummary summary) async {\n    final recorder = PictureRecorder();\n    final canvas = Canvas(recorder);\n    canvas.drawColor(const Color(0xFF0A0A0A), BlendMode.src);\n    // Draw streak, balance, and lightning totals for export.\n    return recorder\n        .endRecording()\n        .toImage(1200, 630)\n        .then((image) => image.toByteData(format: ImageByteFormat.png))\n        .then((data) => data!.buffer.asUint8List());\n  }\n}"
+        },
+        "resources": [
+          {
+            "label": "BDP feedback form",
+            "url": "https://forms.gle/aLtBMjAeLZiKCFxn8"
+          }
+        ]
+      }
+    ],
+    "chatbtc_context": "I am building a Bitcoin savings app in Flutter using bdk_flutter for on-chain wallet operations and ldk_node for Lightning receive. The app targets Nigerian users with NGN price display."
+  },
+  {
+    "id": "psbt-signer-cli",
+    "title": "PSBT Signer CLI",
+    "tagline": "Parse, sign, and broadcast PSBTs from the terminal",
+    "difficulty": "advanced",
+    "weeks": 6,
+    "stack": ["Rust Bitcoin", "PSBT", "Rust"],
+    "description": "Build a CLI tool that parses raw PSBTs, validates inputs, signs with a descriptor wallet, and broadcasts to the network. A deep dive into Bitcoin's transaction format and signing.",
+    "what_you_build": "A Rust CLI binary. Input: a PSBT hex string or file. Output: signed and finalized transaction hex, optionally broadcast to mempool.space testnet.",
+    "milestones": [
+      {
+        "week": 1,
+        "title": "Parse a raw PSBT from hex input and display its structure",
+        "description": "Build the parser entrypoint, decode the PSBT payload, and pretty-print its unsigned transaction fields so the CLI feels immediately useful.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "main.rs",
+          "code": "use bitcoin::consensus::deserialize;\nuse bitcoin::psbt::Psbt;\n\nfn main() -> anyhow::Result<()> {\n    let raw = std::env::args().nth(1).expect(\"missing psbt\");\n    let bytes = hex::decode(raw)?;\n    let psbt: Psbt = deserialize(&bytes)?;\n\n    println!(\"inputs: {}\", psbt.inputs.len());\n    println!(\"outputs: {}\", psbt.outputs.len());\n    println!(\"unsigned tx: {:#?}\", psbt.unsigned_tx);\n    Ok(())\n}"
+        },
+        "resources": [
+          {
+            "label": "BIP 174 PSBT",
+            "url": "https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki"
+          },
+          {
+            "label": "rust-bitcoin PSBT docs",
+            "url": "https://docs.rs/bitcoin/latest/bitcoin/psbt/"
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "title": "Validate inputs and resolve UTXO references via Esplora API",
+        "description": "Look up each previous output, compare the fetched amount and script against the PSBT input data, and fail loudly when the transaction context does not match.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "validator.rs",
+          "code": "use serde::Deserialize;\n\n#[derive(Clone, Deserialize)]\nstruct TxOut {\n    value: u64,\n    scriptpubkey: String,\n}\n\n#[derive(Deserialize)]\nstruct EsploraTx {\n    vout: Vec<TxOut>,\n}\n\npub async fn fetch_prevout(txid: &str, vout: usize) -> anyhow::Result<TxOut> {\n    let url = format!(\"https://blockstream.info/testnet/api/tx/{txid}\");\n    let response = reqwest::get(url).await?;\n    let tx = response.json::<EsploraTx>().await?;\n    Ok(tx.vout[vout].clone())\n}"
+        },
+        "resources": []
+      },
+      {
+        "week": 3,
+        "title": "Sign the transaction using a BIP-86 Taproot descriptor wallet",
+        "description": "Derive the signing key material from your descriptor, apply Taproot tweaking, and produce Schnorr signatures that satisfy the PSBT inputs.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "signer.rs",
+          "code": "use bitcoin::key::TapTweak;\nuse bitcoin::secp256k1::{Keypair, Secp256k1, SecretKey};\n\npub fn taproot_keypair(secret_hex: &str) -> anyhow::Result<Keypair> {\n    let secp = Secp256k1::new();\n    let secret = SecretKey::from_slice(&hex::decode(secret_hex)?)?;\n    let keypair = Keypair::from_secret_key(&secp, &secret);\n    Ok(keypair.tap_tweak(&secp, None).to_inner())\n}"
+        },
+        "resources": [
+          {
+            "label": "Decoding Bitcoin: Taproot",
+            "url": "https://bitcoindevs.xyz/decoding/taproot-roadmap"
+          },
+          {
+            "label": "Decoding Bitcoin: Schnorr",
+            "url": "https://bitcoindevs.xyz/decoding/schnorr-signature"
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "title": "Finalize the PSBT and broadcast to testnet",
+        "description": "Finalize witness data, extract the fully signed transaction hex, and optionally POST it to mempool.space testnet from the same CLI flow.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "broadcaster.rs",
+          "code": "pub async fn broadcast_tx(hex_tx: &str) -> anyhow::Result<String> {\n    let response = reqwest::Client::new()\n        .post(\"https://mempool.space/testnet/api/tx\")\n        .body(hex_tx.to_owned())\n        .send()\n        .await?;\n\n    Ok(response.text().await?)\n}"
+        },
+        "resources": []
+      },
+      {
+        "week": 5,
+        "title": "Add HWI hardware wallet signing support (Ledger/Trezor)",
+        "description": "Introduce an optional signing path through Bitcoin Core HWI so the tool can hand off PSBT signing to external devices without changing the rest of the CLI.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "hwi.rs",
+          "code": "use std::process::Command;\n\npub fn sign_with_hwi(fingerprint: &str, psbt_path: &str) -> anyhow::Result<String> {\n    let output = Command::new(\"hwi\")\n        .args([\"-f\", fingerprint, \"signtx\", psbt_path])\n        .output()?;\n\n    Ok(String::from_utf8(output.stdout)?)\n}"
+        },
+        "resources": [
+          {
+            "label": "HWI GitHub",
+            "url": "https://github.com/bitcoin-core/HWI"
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "title": "CLI polish, full test suite, docs, submit as BOSS contribution",
+        "description": "Finish the UX layer, add a reliable fixture-driven integration suite, document every command, and package the project as a polished open-source contribution.",
+        "starter_code": {
+          "language": "Rust",
+          "filename": "tests/integration.rs",
+          "code": "#[tokio::test]\nasync fn signs_known_fixture() {\n    let fixture = std::fs::read_to_string(\"tests/fixtures/payment.psbt\").unwrap();\n    let result = run_cli([\"sign\", \"--psbt\", fixture.trim()]).await.unwrap();\n    assert!(result.contains(\"final tx\"));\n}"
+        },
+        "resources": []
+      }
+    ],
+    "chatbtc_context": "I am building a PSBT signer CLI in Rust using the rust-bitcoin library. I want to parse, validate, sign, and broadcast PSBTs from the command line."
+  }
+]
