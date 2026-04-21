@@ -102,16 +102,6 @@ export function TrackSelectionScreen({ tracks, initialDemo = false }: TrackSelec
         </div>
       </header>
 
-      <section className="space-y-6">
-        <div className="rounded-[20px] border border-[rgba(247,147,26,0.35)] bg-[radial-gradient(circle_at_top_right,rgba(247,147,26,0.18),rgba(247,147,26,0.08)_45%,rgba(247,147,26,0.04)_100%)] px-5 py-4 md:px-6">
-          <p className="text-[15px] italic leading-7 text-[rgba(240,237,230,0.88)]">
-            “Transparency is your friend. Writing up your conclusions in a public place is valuable collateral that can forever
-            serve as evidence of your progress.”
-          </p>
-          <div className="mt-3 text-[13px] font-medium text-btc">Adam Jonas</div>
-        </div>
-      </section>
-
       <section className="space-y-5">
         <div className="flex flex-wrap gap-2">
           {filters.map((filter) => {
