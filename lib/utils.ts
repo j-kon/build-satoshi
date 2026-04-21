@@ -1,5 +1,7 @@
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
+import clsx, { type ClassValue } from "clsx";
+
+export function cn(...classes: ClassValue[]) {
+  return clsx(classes);
 }
 
 export function formatDifficulty(value: string) {
@@ -8,4 +10,16 @@ export function formatDifficulty(value: string) {
 
 export function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function normalizeExternalUrl(value: string) {
+  if (!value.trim()) {
+    return "https://github.com/yourname/yourproject";
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  return `https://${value}`;
 }

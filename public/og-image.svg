@@ -1,0 +1,19 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0A0A0A"/>
+  <rect x="48" y="48" width="1104" height="534" rx="8" fill="#111111" stroke="#2A2A2A"/>
+  <rect x="86" y="86" width="180" height="36" rx="18" fill="rgba(247,147,26,0.12)" stroke="rgba(247,147,26,0.32)"/>
+  <text x="110" y="110" fill="#F7931A" font-family="Menlo, Monaco, monospace" font-size="18" letter-spacing="1.8">BUILD SATOSHI</text>
+  <text x="88" y="224" fill="#F0EDE6" font-family="Menlo, Monaco, monospace" font-size="68" font-weight="500">Ship your first</text>
+  <text x="88" y="300" fill="#F0EDE6" font-family="Menlo, Monaco, monospace" font-size="68" font-weight="500">Bitcoin product.</text>
+  <text x="88" y="366" fill="#888880" font-family="Arial, sans-serif" font-size="28">Guided project tracks from zero to open-source contributor.</text>
+  <rect x="88" y="448" width="214" height="52" rx="26" fill="#F7931A"/>
+  <text x="128" y="480" fill="#0A0A0A" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1.4">START A TRACK</text>
+  <rect x="882" y="116" width="212" height="136" rx="8" fill="#0A0A0A" stroke="#2A2A2A"/>
+  <text x="918" y="164" fill="#555550" font-family="Arial, sans-serif" font-size="18" letter-spacing="1.3">TRACKS</text>
+  <text x="918" y="226" fill="#F0EDE6" font-family="Menlo, Monaco, monospace" font-size="58">3</text>
+  <rect x="882" y="282" width="212" height="136" rx="8" fill="#0A0A0A" stroke="#2A2A2A"/>
+  <text x="918" y="330" fill="#555550" font-family="Arial, sans-serif" font-size="18" letter-spacing="1.3">WEEKS</text>
+  <text x="918" y="392" fill="#F0EDE6" font-family="Menlo, Monaco, monospace" font-size="58">18</text>
+  <rect x="882" y="448" width="212" height="86" rx="8" fill="#0A0A0A" stroke="#2A2A2A"/>
+  <text x="918" y="500" fill="#888880" font-family="Arial, sans-serif" font-size="24">Bitcoin Dev Project</text>
+</svg>

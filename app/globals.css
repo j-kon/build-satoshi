@@ -21,6 +21,7 @@
 
 @layer base {
   * {
+    box-sizing: border-box;
     border-color: var(--border);
   }
 
@@ -37,6 +38,7 @@
     font-family: var(--font-geist-sans), sans-serif;
     font-size: 14px;
     line-height: 1.5;
+    overflow-x: hidden;
   }
 
   a {
@@ -55,10 +57,48 @@
     background: var(--btc);
     color: #0a0a0a;
   }
+
+  code,
+  pre {
+    font-family: var(--font-geist-mono), monospace;
+  }
 }
 
 @layer components {
   .surface {
     @apply rounded-lg border border-border bg-bg-2;
+  }
+
+  .label {
+    @apply text-[11px] font-medium uppercase tracking-label text-text-3;
+  }
+
+  .code-theme .hljs {
+    background: var(--bg-3);
+    color: var(--text);
+  }
+
+  .code-theme .hljs-keyword,
+  .code-theme .hljs-literal,
+  .code-theme .hljs-selector-tag,
+  .code-theme .hljs-title.function_ {
+    color: var(--btc);
+  }
+
+  .code-theme .hljs-string,
+  .code-theme .hljs-template-tag,
+  .code-theme .hljs-attr {
+    color: var(--green);
+  }
+
+  .code-theme .hljs-comment,
+  .code-theme .hljs-quote {
+    color: var(--text-3);
+  }
+
+  .code-theme .hljs-number,
+  .code-theme .hljs-built_in,
+  .code-theme .hljs-type {
+    color: var(--text);
   }
 }

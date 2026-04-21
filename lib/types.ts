@@ -42,5 +42,3 @@ export type Track = {
   milestones: Milestone[];
   chatbtc_context: string;
 };
-
-export type ProgressMap = Record<string, number[]>;

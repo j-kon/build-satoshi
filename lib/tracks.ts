@@ -1,5 +1,5 @@
 import tracksData from "@/data/tracks.json";
-import type { Difficulty, ProgressMap, Stack, Track } from "@/lib/types";
+import type { Difficulty, Resource, Stack, Track } from "@/lib/types";
 
 export const tracks = tracksData as Track[];
 
@@ -15,30 +15,18 @@ export function getTotalWeeks(items: Track[] = tracks) {
   return items.reduce((total, track) => total + track.weeks, 0);
 }
 
-export function getTrackCompletion(progressMap: ProgressMap, trackId: string, totalWeeks: number) {
-  const completedWeeks = Array.from(new Set(progressMap[trackId] ?? [])).sort((a, b) => a - b);
-  const completed = completedWeeks.length;
-  const percentage = totalWeeks === 0 ? 0 : Math.round((completed / totalWeeks) * 100);
-
-  return {
-    completedWeeks,
-    completed,
-    totalWeeks,
-    percentage,
-    isComplete: completed === totalWeeks
-  };
+export function getSidebarResources(track: Track): Resource[] {
+  return track.milestones[0]?.resources.slice(0, 3) ?? [];
 }
 
-export function getProgressSnapshot(progressMap: ProgressMap) {
-  const totals = tracks.map((track) => getTrackCompletion(progressMap, track.id, track.weeks));
-  const completedWeeks = totals.reduce((sum, item) => sum + item.completed, 0);
-  const startedTracks = totals.filter((item) => item.completed > 0).length;
-  const finishedTracks = totals.filter((item) => item.isComplete).length;
+export function getDifficultyTone(difficulty: Difficulty) {
+  if (difficulty === "beginner") {
+    return "beginner";
+  }
 
-  return {
-    totalWeeks: getTotalWeeks(),
-    completedWeeks,
-    startedTracks,
-    finishedTracks
-  };
+  if (difficulty === "advanced") {
+    return "advanced";
+  }
+
+  return "intermediate";
 }
