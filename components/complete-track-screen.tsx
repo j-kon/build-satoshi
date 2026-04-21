@@ -3,11 +3,13 @@
 import { useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PageShell } from "@/components/page-shell";
 import { PortfolioCard, type PortfolioTheme } from "@/components/portfolio-card";
 import type { Track } from "@/lib/types";
 import { normalizeExternalUrl } from "@/lib/utils";
+import { useProgressStore } from "@/store/progress";
 
 type CompleteTrackScreenProps = {
   track: Track;
@@ -20,6 +22,8 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
   const [githubLink, setGithubLink] = useState("github.com/j-kon/build-satoshi");
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const resetTrack = useProgressStore((state) => state.resetTrack);
+  const router = useRouter();
 
   const normalizedGithub = normalizeExternalUrl(githubLink);
   const tweetText = `Just shipped ${track.title} — my first Bitcoin project built through @bitcoindevpro's Build Satoshi program. ${track.weeks} weeks, real code, real Lightning. ${normalizedGithub} #Bitcoin #BOSS #BitcoinDev`;
@@ -42,6 +46,11 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
     link.download = `build-satoshi-${track.id}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
+  }
+
+  function handleRestartTrack() {
+    resetTrack(track.id, track.weeks);
+    router.push(`/track/${track.id}`);
   }
 
   return (
@@ -128,6 +137,12 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
               is contributing to an existing BOSS project or applying for a grant.
             </p>
             <div className="mt-4 flex flex-wrap gap-4">
+              <Link href={`/track/${track.id}`} className="text-sm text-text-2 transition hover:text-btc">
+                Revisit milestones →
+              </Link>
+              <button type="button" onClick={handleRestartTrack} className="text-sm text-text-2 transition hover:text-btc">
+                Restart track →
+              </button>
               <Link href="/boss-map" className="text-sm text-text-2 transition hover:text-btc">
                 Open BOSS map →
               </Link>

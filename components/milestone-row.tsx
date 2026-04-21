@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { StarterCodeBlock } from "@/components/starter-code-block";
 import type { Milestone } from "@/lib/types";
@@ -36,8 +36,15 @@ function StatusIndicator({ status, week }: { status: MilestoneStatus; week: numb
 }
 
 export function MilestoneRow({ milestone, trackId, status, onMarkComplete }: MilestoneRowProps) {
-  const [showCode, setShowCode] = useState(false);
+  const [isOpen, setIsOpen] = useState(status === "current");
   const isCurrent = status === "current";
+  const isAccessible = status !== "locked";
+
+  useEffect(() => {
+    if (status === "current") {
+      setIsOpen(true);
+    }
+  }, [status]);
 
   return (
     <motion.article
@@ -57,11 +64,11 @@ export function MilestoneRow({ milestone, trackId, status, onMarkComplete }: Mil
           <div>
             <div className="text-[11px] uppercase tracking-label text-text-3">Week {milestone.week}</div>
             <h3 className="mt-2 text-[14px] font-medium text-text">{milestone.title}</h3>
-            {isCurrent ? <p className="mt-2 text-[12px] leading-6 text-text-2">{milestone.description}</p> : null}
+            {isAccessible && isOpen ? <p className="mt-2 text-[12px] leading-6 text-text-2">{milestone.description}</p> : null}
           </div>
 
           <AnimatePresence initial={false}>
-            {isCurrent && showCode && milestone.starter_code ? (
+            {isAccessible && isOpen && milestone.starter_code ? (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -76,13 +83,13 @@ export function MilestoneRow({ milestone, trackId, status, onMarkComplete }: Mil
         </div>
 
         <div className="flex items-start justify-start md:justify-end">
-          {isCurrent && milestone.starter_code ? (
+          {isAccessible ? (
             <button
               type="button"
-              onClick={() => setShowCode((current) => !current)}
+              onClick={() => setIsOpen((current) => !current)}
               className="text-[12px] text-text-2 transition hover:text-btc"
             >
-              {showCode ? "Hide starter code" : "View starter code"}
+              {isOpen ? "Hide milestone" : status === "done" ? "Revisit milestone" : "View milestone"}
             </button>
           ) : null}
         </div>

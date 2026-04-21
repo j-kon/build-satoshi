@@ -19,6 +19,7 @@ type TrackDashboardScreenProps = {
 export function TrackDashboardScreen({ track }: TrackDashboardScreenProps) {
   const completedWeeks = useProgressStore((state) => state.completedWeeks);
   const markWeekComplete = useProgressStore((state) => state.markWeekComplete);
+  const resetTrack = useProgressStore((state) => state.resetTrack);
   const router = useRouter();
 
   const completedCount = track.milestones.filter((milestone) => completedWeeks[`${track.id}-week-${milestone.week}`]).length;
@@ -34,6 +35,11 @@ export function TrackDashboardScreen({ track }: TrackDashboardScreenProps) {
     if (week === track.weeks) {
       window.setTimeout(() => router.push(`/complete/${track.id}`), 280);
     }
+  }
+
+  function handleRestartTrack() {
+    resetTrack(track.id, track.weeks);
+    router.push(`/track/${track.id}`);
   }
 
   return (
@@ -102,6 +108,22 @@ export function TrackDashboardScreen({ track }: TrackDashboardScreenProps) {
               <span>Ask CoreDev Bot →</span>
             </a>
           </div>
+
+          {completedCount > 0 ? (
+            <div className="border-t border-border pt-4">
+              <div className="label">Track controls</div>
+              <button
+                type="button"
+                onClick={handleRestartTrack}
+                className="mt-3 flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm text-text-2 transition hover:border-btc hover:text-btc"
+              >
+                <span>Restart track →</span>
+              </button>
+              <p className="mt-2 text-[12px] leading-6 text-text-3">
+                Completed milestones stay open here, and restarting sends you back to week 1.
+              </p>
+            </div>
+          ) : null}
         </aside>
 
         <section className="space-y-5">
