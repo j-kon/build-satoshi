@@ -14,9 +14,9 @@
         "title": "Set up LDK node on regtest and connect to a local bitcoind",
         "description": "Install LDK, configure a regtest environment using Bitcoin Core, and verify your node starts and syncs.",
         "starter_code": {
-          "language": "Rust",
+          "language": "rust",
           "filename": "main.rs",
-          "code": "use lightning::routing::gossip::NetworkGraph;\nuse lightning::util::config::UserConfig;\n\nfn main() -> anyhow::Result<()> {\n    let network_graph = NetworkGraph::new(bitcoin::Network::Regtest, &logger);\n    let config = UserConfig::default();\n    let channel_manager = build_channel_manager(config, &fee_estimator, &chain_monitor)?;\n\n    println!(\"LDK node booted on regtest\");\n    println!(\"channel manager ready: {:?}\", channel_manager.get_our_node_id());\n    Ok(())\n}"
+          "code": "use ldk_node::Builder;\nuse ldk_node::bitcoin::Network;\nuse ldk_node::lightning_invoice::Bolt11Invoice;\nuse std::str::FromStr;\n\n#[tokio::main]\nasync fn main() -> anyhow::Result<()> {\n    let mut builder = Builder::new();\n    builder.set_network(Network::Regtest);\n    builder.set_esplora_server(\n        \"http://localhost:3002\".to_string()\n    );\n\n    let node = builder.build()?;\n    node.start()?;\n\n    println!(\n        \"Node started. Node ID: {}\",\n        node.node_id()\n    );\n\n    println!(\n        \"Funding address: {}\",\n        node.onchain_payment().new_address()?\n    );\n\n    // Keep running, listen for events\n    loop {\n        let event = node.wait_next_event();\n        println!(\"Event: {:?}\", event);\n        node.event_handled();\n    }\n}"
         },
         "resources": [
           {
@@ -34,9 +34,9 @@
         "title": "Generate a BOLT11 invoice and display a QR code",
         "description": "Create a fixed-value or user-entered invoice, then expose it to a tiny frontend that renders both the invoice string and a scannable QR code.",
         "starter_code": {
-          "language": "Rust",
+          "language": "rust",
           "filename": "invoice.rs",
-          "code": "use lightning_invoice::utils::create_invoice_from_channelmanager;\n\npub fn create_tip_invoice(amount_sats: u64) -> anyhow::Result<String> {\n    let amount_msats = amount_sats * 1_000;\n    let invoice = create_invoice_from_channelmanager(\n        &channel_manager,\n        keys_manager,\n        logger,\n        bitcoin::Network::Regtest,\n        Some(amount_msats),\n        \"build-satoshi-tip\".to_owned(),\n        3600,\n        None,\n    )?;\n\n    Ok(invoice.to_string())\n}"
+          "code": "use ldk_node::Node;\nuse ldk_node::payment::Bolt11Payment;\n\npub fn create_invoice(\n    node: &Node,\n    amount_sats: u64,\n    description: &str,\n) -> anyhow::Result<String> {\n    let invoice = node\n        .bolt11_payment()\n        .receive(\n            amount_sats * 1000, // convert to msats\n            description,\n            3600,              // 1 hour expiry\n        )?;\n\n    Ok(invoice.to_string())\n}"
         },
         "resources": [
           {
@@ -94,9 +94,9 @@
         "title": "Set up bdk_flutter, generate a descriptor wallet, and display a receive address",
         "description": "Initialize a testnet descriptor wallet, persist the seed locally for development, and render the first receive address in a clean onboarding screen.",
         "starter_code": {
-          "language": "Dart",
+          "language": "dart",
           "filename": "wallet_service.dart",
-          "code": "import 'package:bdk_flutter/bdk_flutter.dart';\n\nclass WalletService {\n  Future<Wallet> initWallet(String mnemonic) async {\n    final descriptor = await Descriptor.newBip84(\n      mnemonic: mnemonic,\n      network: Network.testnet,\n      password: '',\n    );\n\n    return Wallet(descriptor: descriptor, network: Network.testnet);\n  }\n}"
+          "code": "import 'package:bdk_flutter/bdk_flutter.dart';\n\nclass WalletService {\n  late Wallet _wallet;\n  late Blockchain _blockchain;\n\n  Future<void> init() async {\n    final mnemonic = await Mnemonic.create(WordCount.words12);\n\n    final descriptors = await _buildDescriptors(mnemonic);\n\n    _blockchain = await Blockchain.create(\n      config: BlockchainConfig.esplora(\n        config: EsploraConfig(\n          baseUrl: 'https://blockstream.info/testnet/api',\n          stopGap: 10,\n        ),\n      ),\n    );\n\n    _wallet = await Wallet.create(\n      descriptor: descriptors.$1,\n      changeDescriptor: descriptors.$2,\n      network: Network.testnet,\n      databaseConfig: const DatabaseConfig.memory(),\n    );\n  }\n\n  Future<(Descriptor, Descriptor)> _buildDescriptors(\n      Mnemonic mnemonic) async {\n    final secretKey = await DescriptorSecretKey.create(\n      network: Network.testnet,\n      mnemonic: mnemonic,\n    );\n\n    final external = await Descriptor.newBip84(\n      secretKey: secretKey,\n      network: Network.testnet,\n      keychainKind: KeychainKind.external,\n    );\n\n    final internal = await Descriptor.newBip84(\n      secretKey: secretKey,\n      network: Network.testnet,\n      keychainKind: KeychainKind.internal,\n    );\n\n    return (external, internal);\n  }\n\n  Future<String> getReceiveAddress() async {\n    final addressInfo = await _wallet.getAddress(\n      addressIndex: const AddressIndex.increase(),\n    );\n    return addressInfo.address.asString();\n  }\n\n  Future<int> getBalance() async {\n    await _wallet.sync(blockchain: _blockchain);\n    final balance = await _wallet.getBalance();\n    return balance.total.toInt();\n  }\n\n  Future<List<TransactionDetails>> getTransactions() async {\n    return await _wallet.listTransactions(includeRaw: false);\n  }\n}"
         },
         "resources": [
           {
@@ -130,9 +130,9 @@
         "title": "Implement vault lock periods using OP_CHECKLOCKTIMEVERIFY",
         "description": "Create a savings vault where funds are locked until a future block height. Build the lock and unlock flow so users understand when funds become spendable.",
         "starter_code": {
-          "language": "Dart",
+          "language": "dart",
           "filename": "vault_service.dart",
-          "code": "class VaultService {\n  Script buildCltvVault({required String pubkey, required int lockHeight}) {\n    return ScriptBuilder()\n        .addInt(lockHeight)\n        .addOp(Opcode.opCheckLockTimeVerify)\n        .addOp(Opcode.opDrop)\n        .addData(pubkey)\n        .addOp(Opcode.opCheckSig)\n        .asScript();\n  }\n}"
+          "code": "import 'package:bdk_flutter/bdk_flutter.dart';\n\nclass VaultService {\n  final Wallet _wallet;\n  final Blockchain _blockchain;\n\n  VaultService(this._wallet, this._blockchain);\n\n  /// Creates a CLTV-locked output that can only be spent\n  /// after [lockUntilBlock] block height is reached.\n  Future<String> createVault({\n    required int amountSats,\n    required int lockUntilBlock,\n  }) async {\n    final addressInfo = await _wallet.getAddress(\n      addressIndex: const AddressIndex.increase(),\n    );\n\n    // Build CLTV script:\n    // OP_lockUntilBlock OP_CHECKLOCKTIMEVERIFY OP_DROP\n    // OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG\n    final script = await ScriptBuf.withCapacity(50);\n    await script.pushInt(lockUntilBlock);\n    await script.pushOpcode(Opcode.opCheckLockTimeVerify);\n    await script.pushOpcode(Opcode.opDrop);\n    await script.pushOpcode(Opcode.opDup);\n    await script.pushOpcode(Opcode.opHash160);\n    await script.pushSlice(\n      await addressInfo.address.toScriptPubkey().toBytes(),\n    );\n    await script.pushOpcode(Opcode.opEqualVerify);\n    await script.pushOpcode(Opcode.opCheckSig);\n\n    final txBuilder = TxBuilder();\n    final (psbt, _) = await txBuilder\n        .addRecipient(\n          script: script,\n          amount: BigInt.from(amountSats),\n        )\n        .feeRate(feeRate: 2.0)\n        .finish(_wallet);\n\n    final signedPsbt = await _wallet.sign(psbt: psbt);\n    final tx = await signedPsbt.extractTx();\n    final txid = await _blockchain.broadcast(transaction: tx);\n\n    return txid;\n  }\n\n  bool isVaultUnlocked(int lockUntilBlock, int currentBlock) {\n    return currentBlock >= lockUntilBlock;\n  }\n}"
         },
         "resources": [
           {
@@ -161,9 +161,9 @@
         "title": "Add Lightning receive via LDK-node Flutter bindings",
         "description": "Bridge the mobile app into Lightning receive flow so users can top up savings with small payments and watch those sats land inside the app.",
         "starter_code": {
-          "language": "Dart",
-          "filename": "lightning_receive_service.dart",
-          "code": "import 'package:ldk_node/ldk_node.dart';\n\nclass LightningReceiveService {\n  Future<String> createInvoice(Node node, int amountSats) async {\n    final invoice = await node.receive(\n      amountMsat: amountSats * 1000,\n      description: 'Build Satoshi savings deposit',\n      expirySecs: 3600,\n    );\n\n    return invoice.bolt11;\n  }\n}"
+          "language": "dart",
+          "filename": "lightning_service.dart",
+          "code": "import 'package:ldk_node/ldk_node.dart';\n\nclass LightningService {\n  late Node _node;\n\n  Future<void> init() async {\n    final builder = Builder()\n      ..setNetwork(Network.testnet)\n      ..setEsploraServer('https://blockstream.info/testnet/api')\n      ..setGossipSourceRgs(\n        'https://rapidsync.lightningdevkit.org/testnet/snapshot',\n      );\n\n    _node = await builder.build();\n    await _node.start();\n  }\n\n  Future<String> receivePayment({\n    required int amountSats,\n    required String description,\n  }) async {\n    final invoice = await _node.bolt11Payment().receive(\n      amountMsat: amountSats * 1000,\n      description: description,\n      expirySecs: 3600,\n    );\n    return invoice.toString();\n  }\n\n  Future<void> waitForPayment(String paymentHash) async {\n    await for (final event in _node.eventHandler()) {\n      if (event is PaymentReceived &&\n          event.paymentHash.toString() == paymentHash) {\n        break;\n      }\n    }\n  }\n\n  Future<void> dispose() async {\n    await _node.stop();\n  }\n}"
         },
         "resources": [
           {
@@ -233,9 +233,9 @@
         "title": "Parse a raw PSBT from hex input and display its structure",
         "description": "Build the parser entrypoint, decode the PSBT payload, and pretty-print its unsigned transaction fields so the CLI feels immediately useful.",
         "starter_code": {
-          "language": "Rust",
+          "language": "rust",
           "filename": "main.rs",
-          "code": "use bitcoin::consensus::deserialize;\nuse bitcoin::psbt::Psbt;\n\nfn main() -> anyhow::Result<()> {\n    let raw = std::env::args().nth(1).expect(\"missing psbt\");\n    let bytes = hex::decode(raw)?;\n    let psbt: Psbt = deserialize(&bytes)?;\n\n    println!(\"inputs: {}\", psbt.inputs.len());\n    println!(\"outputs: {}\", psbt.outputs.len());\n    println!(\"unsigned tx: {:#?}\", psbt.unsigned_tx);\n    Ok(())\n}"
+          "code": "use bitcoin::psbt::Psbt;\nuse bitcoin::consensus::deserialize;\nuse std::str::FromStr;\n\nfn main() -> anyhow::Result<()> {\n    let args: Vec<String> = std::env::args().collect();\n\n    if args.len() < 2 {\n        eprintln!(\"Usage: psbt-signer <hex-encoded-psbt>\");\n        std::process::exit(1);\n    }\n\n    let psbt_hex = &args[1];\n    let psbt_bytes = hex::decode(psbt_hex)?;\n    let psbt: Psbt = deserialize(&psbt_bytes)?;\n\n    println!(\"=== PSBT Summary ===\");\n    println!(\"Version: {}\", psbt.unsigned_tx.version);\n    println!(\"Locktime: {}\", psbt.unsigned_tx.lock_time);\n    println!();\n\n    println!(\"--- Inputs ({}) ---\", psbt.inputs.len());\n    for (i, input) in psbt.inputs.iter().enumerate() {\n        println!(\"  Input {}\", i);\n        if let Some(utxo) = &input.witness_utxo {\n            println!(\n                \"    Value: {} sats\",\n                utxo.value.to_sat()\n            );\n        }\n        if let Some(origin) = input.tap_key_origins.values().next() {\n            println!(\n                \"    Derivation: {}\",\n                origin.1.derivation_path()\n            );\n        }\n    }\n\n    println!();\n    println!(\"--- Outputs ({}) ---\", psbt.outputs.len());\n    for (i, _output) in psbt.outputs.iter().enumerate() {\n        let txout = &psbt.unsigned_tx.output[i];\n        println!(\n            \"  Output {}: {} sats\",\n            i,\n            txout.value.to_sat()\n        );\n    }\n\n    Ok(())\n}"
         },
         "resources": [
           {
@@ -264,9 +264,9 @@
         "title": "Sign the transaction using a BIP-86 Taproot descriptor wallet",
         "description": "Derive the signing key material from your descriptor, apply Taproot tweaking, and produce Schnorr signatures that satisfy the PSBT inputs.",
         "starter_code": {
-          "language": "Rust",
+          "language": "rust",
           "filename": "signer.rs",
-          "code": "use bitcoin::key::TapTweak;\nuse bitcoin::secp256k1::{Keypair, Secp256k1, SecretKey};\n\npub fn taproot_keypair(secret_hex: &str) -> anyhow::Result<Keypair> {\n    let secp = Secp256k1::new();\n    let secret = SecretKey::from_slice(&hex::decode(secret_hex)?)?;\n    let keypair = Keypair::from_secret_key(&secp, &secret);\n    Ok(keypair.tap_tweak(&secp, None).to_inner())\n}"
+          "code": "use bitcoin::psbt::Psbt;\nuse bitcoin::secp256k1::{Secp256k1, All};\nuse bitcoin::bip32::{\n    DerivationPath, ExtendedPrivKey, Fingerprint\n};\nuse bitcoin::Network;\nuse std::str::FromStr;\n\npub struct Signer {\n    secp: Secp256k1<All>,\n    xprv: ExtendedPrivKey,\n    fingerprint: Fingerprint,\n}\n\nimpl Signer {\n    pub fn new(xprv_str: &str) -> anyhow::Result<Self> {\n        let secp = Secp256k1::new();\n        let xprv = ExtendedPrivKey::from_str(xprv_str)?;\n        let fingerprint = xprv.fingerprint(&secp);\n\n        Ok(Self { secp, xprv, fingerprint })\n    }\n\n    pub fn sign(&self, psbt: &mut Psbt) -> anyhow::Result<()> {\n        for (i, input) in psbt.inputs.iter_mut().enumerate() {\n            for (pk, (fingerprint, path)) in\n                input.tap_key_origins.clone()\n            {\n                if fingerprint != self.fingerprint {\n                    continue;\n                }\n\n                let child_xprv = self.xprv\n                    .derive_priv(&self.secp, &path)?;\n\n                let keypair = child_xprv\n                    .to_keypair(&self.secp);\n\n                // Sign the taproot key-path spend\n                psbt.sign(&keypair, &self.secp)\n                    .map_err(|(_, e)| {\n                        anyhow::anyhow!(\"{:?}\", e)\n                    })?;\n\n                println!(\n                    \"  Signed input {} with {}\",\n                    i, pk\n                );\n            }\n        }\n        Ok(())\n    }\n}"
         },
         "resources": [
           {

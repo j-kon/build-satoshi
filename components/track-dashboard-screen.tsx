@@ -25,6 +25,8 @@ export function TrackDashboardScreen({ track }: TrackDashboardScreenProps) {
   const currentWeek = track.milestones.find((milestone) => !completedWeeks[`${track.id}-week-${milestone.week}`])?.week ?? track.weeks;
   const weeksLeft = Math.max(track.weeks - completedCount, 0);
   const resources = getSidebarResources(track);
+  const holocatUrl = `https://chat.bitcoinsearch.xyz/?author=holocat&q=${encodeURIComponent(track.chatbtc_context)}`;
+  const coredevUrl = `https://chat.bitcoinsearch.xyz/?author=coredev&q=${encodeURIComponent(track.chatbtc_context)}`;
 
   function handleMarkComplete(week: number) {
     markWeekComplete(track.id, week);
@@ -84,12 +86,20 @@ export function TrackDashboardScreen({ track }: TrackDashboardScreenProps) {
           <div className="border-t border-border pt-4">
             <div className="label">Ask for help</div>
             <a
-              href={`https://chat.bitcoinsearch.xyz/?q=${encodeURIComponent(track.chatbtc_context)}`}
+              href={holocatUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm text-text-2 transition hover:border-btc hover:text-btc"
             >
-              <span>Ask ChatBTC →</span>
+              <span>Ask Holocat →</span>
+            </a>
+            <a
+              href={coredevUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-sm text-text-2 transition hover:border-btc hover:text-btc"
+            >
+              <span>Ask CoreDev Bot →</span>
             </a>
           </div>
         </aside>

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import Link from "next/link";
 
 import { PageShell } from "@/components/page-shell";
 import { PortfolioCard, type PortfolioTheme } from "@/components/portfolio-card";
@@ -15,8 +17,9 @@ const themeOptions: PortfolioTheme[] = ["dark", "light", "bitcoin"];
 
 export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
   const [theme, setTheme] = useState<PortfolioTheme>("dark");
-  const [githubLink, setGithubLink] = useState("github.com/yourname/yourproject");
+  const [githubLink, setGithubLink] = useState("github.com/j-kon/build-satoshi");
   const [copied, setCopied] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const normalizedGithub = normalizeExternalUrl(githubLink);
   const tweetText = `Just shipped ${track.title} — my first Bitcoin project built through @bitcoindevpro's Build Satoshi program. ${track.weeks} weeks, real code, real Lightning. ${normalizedGithub} #Bitcoin #BOSS #BitcoinDev`;
@@ -26,6 +29,19 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
     await navigator.clipboard.writeText(linkedInPost);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function downloadCard() {
+    if (!cardRef.current) return;
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 3,
+      useCORS: true,
+      backgroundColor: null
+    });
+    const link = document.createElement("a");
+    link.download = `build-satoshi-${track.id}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   }
 
   return (
@@ -42,7 +58,7 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)]">
         <div className="space-y-5">
-          <PortfolioCard track={track} githubLink={githubLink} theme={theme} />
+          <PortfolioCard ref={cardRef} track={track} githubLink={githubLink} theme={theme} />
 
           <div className="flex flex-wrap gap-2">
             {themeOptions.map((option) => (
@@ -68,12 +84,19 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
             <input
               value={githubLink}
               onChange={(event) => setGithubLink(event.target.value)}
-              placeholder="github.com/yourname/yourproject"
+              placeholder="github.com/j-kon/build-satoshi"
               className="w-full rounded-lg border border-border bg-bg-2 px-4 py-3 text-[14px] text-text outline-none transition placeholder:text-text-3 focus:border-border-active"
             />
           </label>
 
           <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={downloadCard}
+              className="rounded-lg border border-border px-4 py-3 text-sm text-text-2 transition hover:border-btc hover:text-btc"
+            >
+              Download card
+            </button>
             <a
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`}
               target="_blank"
@@ -105,6 +128,9 @@ export function CompleteTrackScreen({ track }: CompleteTrackScreenProps) {
               is contributing to an existing BOSS project or applying for a grant.
             </p>
             <div className="mt-4 flex flex-wrap gap-4">
+              <Link href="/boss-map" className="text-sm text-text-2 transition hover:text-btc">
+                Open BOSS map →
+              </Link>
               <a
                 href="https://bitcoindevs.xyz/projects"
                 target="_blank"

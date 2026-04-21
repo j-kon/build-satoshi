@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { StackPill } from "@/components/stack-pill";
 import type { Track } from "@/lib/types";
+import { useProgressStore } from "@/store/progress";
 
 type TrackCardProps = {
   track: Track;
@@ -13,6 +14,10 @@ type TrackCardProps = {
 
 export function TrackCard({ track }: TrackCardProps) {
   const router = useRouter();
+  const completedWeeks = useProgressStore((state) => state.completedWeeks);
+  const completedCount = track.milestones.filter((milestone) => completedWeeks[`${track.id}-week-${milestone.week}`]).length;
+  const isComplete = completedCount === track.weeks;
+  const progressWidth = `${Math.round((completedCount / track.weeks) * 100)}%`;
 
   return (
     <motion.article
@@ -45,12 +50,26 @@ export function TrackCard({ track }: TrackCardProps) {
       </div>
 
       <div className="mt-6 border-t border-border pt-5">
+        <div className="mb-3 flex items-center justify-between gap-3 font-mono text-[12px]">
+          <span className="text-text-3">
+            {completedCount}/{track.weeks} weeks complete
+          </span>
+          <span className={isComplete ? "text-btc" : "text-text-3"}>{isComplete ? "Complete" : "In progress"}</span>
+        </div>
+        <div className="mb-4 h-2 overflow-hidden rounded-full border border-border bg-bg">
+          <motion.div
+            className="h-full rounded-full bg-btc"
+            animate={{ width: progressWidth }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ boxShadow: completedCount > 0 ? "0 0 18px var(--btc-glow)" : "none" }}
+          />
+        </div>
         <button
           type="button"
           onClick={() => router.push(`/track/${track.id}`)}
           className="text-sm text-text-2 transition hover:text-btc"
         >
-          Start track →
+          {isComplete ? "View completed track →" : "Start track →"}
         </button>
       </div>
     </motion.article>

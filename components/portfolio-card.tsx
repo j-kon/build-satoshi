@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { forwardRef } from "react";
 
 import type { Track } from "@/lib/types";
 import { cn, normalizeExternalUrl } from "@/lib/utils";
@@ -31,23 +32,27 @@ const pillTheme: Record<PortfolioTheme, string> = {
   bitcoin: "border-[rgba(255,255,255,0.35)] text-white"
 };
 
-export function PortfolioCard({ track, githubLink, theme }: PortfolioCardProps) {
+export const PortfolioCard = forwardRef<HTMLDivElement, PortfolioCardProps>(function PortfolioCard(
+  { track, githubLink, theme },
+  ref
+) {
   const normalizedGithub = normalizeExternalUrl(githubLink);
 
   return (
     <motion.div
+      ref={ref}
       key={theme}
       initial={{ opacity: 0.86, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className={cn("w-full max-w-[460px]", theme === "light" ? "shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" : "")}
+      className={cn("w-full max-w-[500px]", theme === "light" ? "shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" : "")}
     >
       <div className={cn("flex aspect-[460/220] flex-col rounded-lg border p-5", themeClasses[theme])}>
         <div className={cn("text-[11px]", mutedClasses[theme])}>Bitcoin Dev Project · Build Satoshi</div>
 
         <div className="mt-5 flex-1">
           <div className={cn("text-[13px]", mutedClasses[theme])}>I shipped</div>
-          <div className="mt-2 max-w-[16ch] font-mono text-[20px] font-medium leading-tight md:text-[22px]">{track.title}</div>
+          <div className="mt-2 font-mono text-[18px] font-medium leading-tight md:text-[20px]">{track.title}</div>
           <div className="mt-4 flex flex-wrap gap-2">
             {track.stack.map((item) => (
               <span key={item} className={cn("rounded-full border px-2 py-[3px] font-mono text-[11px]", pillTheme[theme])}>
@@ -65,4 +70,4 @@ export function PortfolioCard({ track, githubLink, theme }: PortfolioCardProps) 
       </div>
     </motion.div>
   );
-}
+});

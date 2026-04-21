@@ -10,6 +10,7 @@ export interface ProgressState {
   isWeekComplete: (trackId: string, week: number) => boolean;
   getCurrentWeek: (trackId: string, totalWeeks: number) => number;
   resetTrack: (trackId: string, totalWeeks: number) => void;
+  seedDemoProgress: () => void;
 }
 
 export function getWeekKey(trackId: string, week: number) {
@@ -54,6 +55,18 @@ export const useProgressStore = create<ProgressState>()(
 
           for (let week = 1; week <= totalWeeks; week += 1) {
             delete nextCompletedWeeks[getWeekKey(trackId, week)];
+          }
+
+          return {
+            completedWeeks: nextCompletedWeeks
+          };
+        }),
+      seedDemoProgress: () =>
+        set((state) => {
+          const nextCompletedWeeks = { ...state.completedWeeks };
+
+          for (let week = 1; week <= 8; week += 1) {
+            nextCompletedWeeks[getWeekKey("bitcoin-savings-app", week)] = true;
           }
 
           return {
