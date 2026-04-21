@@ -103,82 +103,12 @@ export function TrackSelectionScreen({ tracks, initialDemo = false }: TrackSelec
       </header>
 
       <section className="space-y-6">
-        <div className="hidden sm:block">
-          <svg viewBox="0 0 640 72" className="w-full overflow-visible" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Build Satoshi ecosystem bridge">
-            <defs>
-              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6" fill="none" stroke="var(--border)" strokeWidth="1" />
-              </marker>
-            </defs>
-            {[
-              { label: "Saving Satoshi", x: 10, active: false },
-              { label: "Decoding Bitcoin", x: 142, active: false },
-              { label: "BUILD SATOSHI", x: 274, active: true },
-              { label: "BOSS Projects", x: 406, active: false },
-              { label: "Get Funded", x: 538, active: false }
-            ].map((node) => (
-              <g key={node.label}>
-                <rect
-                  x={node.x}
-                  y="14"
-                  width="100"
-                  height="44"
-                  rx="16"
-                  fill={node.active ? "var(--btc-dim)" : "var(--bg-3)"}
-                  stroke={node.active ? "var(--btc)" : "var(--border)"}
-                />
-                <text
-                  x={node.x + 50}
-                  y="36"
-                  fill={node.active ? "var(--btc)" : "var(--text-2)"}
-                  fontFamily="var(--font-geist-mono)"
-                  fontSize="10"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {node.label}
-                </text>
-              </g>
-            ))}
-            {[110, 242, 374, 506].map((x) => (
-              <line key={x} x1={x} y1="36" x2={x + 42} y2="36" stroke="var(--border)" markerEnd="url(#arrowhead)" />
-            ))}
-            <text
-              x="324"
-              y="66"
-              fill="var(--btc)"
-              fontFamily="var(--font-geist-mono)"
-              fontSize="10"
-              textAnchor="middle"
-            >
-              you are here
-            </text>
-          </svg>
-        </div>
-
-        <div className="mx-auto w-full max-w-[720px]">
-          <div className="aspect-video overflow-hidden rounded-lg border border-border bg-bg-2">
-            {"https://www.loom.com/embed/REPLACE_WITH_LOOM_ID".includes("REPLACE_WITH_LOOM_ID") ? (
-              <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-border">
-                  <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M3 2L15 10L3 18V2Z" fill="var(--text-3)" />
-                  </svg>
-                </div>
-                <div className="mt-4 text-[14px] text-text-3">Demo video coming soon</div>
-                <div className="mt-2 text-[12px] text-text-3">Replace LOOM_ID in app/page.tsx with your Loom embed ID</div>
-              </div>
-            ) : (
-              <iframe
-                src="https://www.loom.com/embed/REPLACE_WITH_LOOM_ID"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allowFullScreen
-                title="Build Satoshi demo video"
-              />
-            )}
-          </div>
+        <div className="rounded-[20px] border border-[rgba(247,147,26,0.35)] bg-[radial-gradient(circle_at_top_right,rgba(247,147,26,0.18),rgba(247,147,26,0.08)_45%,rgba(247,147,26,0.04)_100%)] px-5 py-4 md:px-6">
+          <p className="text-[15px] italic leading-7 text-[rgba(240,237,230,0.88)]">
+            “Transparency is your friend. Writing up your conclusions in a public place is valuable collateral that can forever
+            serve as evidence of your progress.”
+          </p>
+          <div className="mt-3 text-[13px] font-medium text-btc">Adam Jonas</div>
         </div>
       </section>
 
